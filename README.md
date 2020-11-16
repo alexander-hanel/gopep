@@ -76,6 +76,32 @@ Attributes from Go binaries can be hashed and used for clustering. This techniqu
  - `/usr/local/go/test/helloworld.go`
 - itabs (if present)
 
+### Command line 
+gopep can be used as a class of executed as a script. The following command line options are available.
+```
+python gopep.py -h
+usage: gopep.py [-h] [-c C_DIR] [-e E_FILE] [-x EA_DIR] [-v IN_FILE] [-m MD_FILE] [-t T_FILE] [-ev ET_FILE]
+
+gopep Go Portable Executable Parser
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -c C_DIR, --cluster C_DIR
+                        cluster directory of files
+  -e E_FILE, --export E_FILE
+                        export results of file to JSON
+  -x EA_DIR, --export_all EA_DIR
+                        export results of directory to JSONs
+  -v IN_FILE, --version IN_FILE
+                        print version
+  -m MD_FILE, --module-data MD_FILE
+                        print module data details
+  -t T_FILE, --triage T_FILE
+                        triage file, print interesting attributes
+  -ev ET_FILE, --everything ET_FILE
+                        print EVERYTHING!
+```
+
 ***
 # Notes
 
