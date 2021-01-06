@@ -1,8 +1,9 @@
 """
 Author: Alexander Hanel
-Version: 1.0
+Version: 1.1
 Purpose: go portable executable parser
 Requirements: Python3+ & Pefile
+Updates: Version 1.1 fixed bug in file tab strucutre parsing and other fixes
 
 """
 import argparse
@@ -12,6 +13,7 @@ import ctypes
 import glob
 import binascii
 import json
+import os
 from hashlib import md5
 from difflib import SequenceMatcher
 from module_data import *
@@ -79,6 +81,7 @@ class GOPE(object):
             self.pe_bit()
             self.is_stripped()
             self.is_packed()
+            self.read_data()
             self.parse()
 
     def load_pe(self):
@@ -88,6 +91,14 @@ class GOPE(object):
         """
         try:
             self.pe = pefile.PE(self.file_path)
+        except Exception as e:
+            self.error = True
+            self.error_message = e
+
+    def read_data(self):
+        try:
+            with open(self.file_path, "rb") as infile:
+                self.data = infile.read()
         except Exception as e:
             self.error = True
             self.error_message = e
@@ -171,6 +182,7 @@ class GOPE(object):
     def ptr(self, addr, size=None):
         """
         read data at given offset, size can be modified because 64bit exes can still use 32bit sizes (4bytes)
+        parses a particular section because some structures
         :param addr:
         :param size:
         :return:
@@ -184,11 +196,43 @@ class GOPE(object):
             data = self.pe_section[addr:addr + size]
             return struct.unpack("<Q", data)[0]
 
+    def file_ptr(self, addr, size=None):
+        """
+
+        :param addr:
+        :param size:
+        :return:
+        """
+        if not size:
+            size = self.size
+        if size == 4:
+            data = self.data[addr:addr + size]
+            return struct.unpack("<I", data)[0]
+        else:
+            data = self.data[addr:addr + size]
+            return struct.unpack("<Q", data)[0]
+
     def pack_me(self, ii):
+        """
+
+        :param ii:
+        :return:
+        """
         if self.size == 4:
             return struct.pack("<I", ii)
         else:
             return struct.pack("<Q", ii)
+
+    def rva2file(self, offset):
+        """
+        convert RVA to file offset, feels hackish but accurate
+        :param offset:
+        :return:
+        """
+        for section in self.pe.sections:
+            if section.VirtualAddress < (offset - self.pe.OPTIONAL_HEADER.ImageBase) < (section.VirtualAddress + section.Misc_VirtualSize):
+                return abs((self.pe.OPTIONAL_HEADER.ImageBase - offset) + ( section.VirtualAddress - section.PointerToRawData))
+        return
 
     def is_stripped(self):
         """
@@ -206,6 +250,7 @@ class GOPE(object):
 
     def parse_functab(self):
         """
+
         :return:
         """
         functab = []
@@ -322,22 +367,30 @@ class GOPE(object):
         # add validataion
 
     def parse_file_tab(self):
-            try:
-                file_tab_len = self.module_data.filetab_len
-            except:
-                return
-            for c in range(4, file_tab_len + 1 ):
-                offset = self.module_data.filetab + (c*4)
-                # convert filetab to offset
-                try:
-                    file_tab_file_offset = self.pe.get_offset_from_rva(offset)
-                except:
-                    # calculate offset based off of already parsed
-                    file_tab_file_offset = (self.module_data.filetab - self.module_data.ftab ) + self.gopclntab_offset + 12
-                file_tab_offset = self.ptr(file_tab_file_offset + (c*4), size=4) + self.gopclntab_offset
-                temp_string = self.pe_section[file_tab_offset:].split(b"\x00")[0]
-                if temp_string:
-                    self.filetab.append(temp_string)
+        # filetab virtual adddress and length is stored within the Module Data
+        # .data:00000000007C19E0                 dq offset unk_1C470F0   ; filetab.array
+        # .data:00000000007C19E0                 dq 25Fh                 ; filetab.len
+        # .data:00000000007C19E0                 dq 25Fh                 ; filetab.cap
+
+        # verify the filetab values have been parsec from Module Data structure
+        try:
+            file_tab_len = self.module_data.filetab_len
+        except:
+            return
+        # loop through each entry in the filetab
+        # skip the first entry because its the size/length
+        # the offset to the string is
+        # 1. read offset at filetab[index] aka
+        # 2. offset + gopclntab = offset to string
+        for c in range(1, file_tab_len):
+            offset = self.module_data.filetab + (c*4)
+            # convert filetab to offset
+            file_tab_offset = self.rva2file(offset)
+            index = self.file_ptr(file_tab_offset, size=4)
+            file_tab_str_offset = index + self.rva2file(self.module_data.pclntable)
+            temp_string = self.data[file_tab_str_offset:].split(b"\x00")[0]
+            if temp_string:
+                self.filetab.append(temp_string)
 
     def parse_itabsym(self):
         """
@@ -373,12 +426,12 @@ class GOPE(object):
         """
         stucture of coff table, well kind of
         {
-            char		n_name[8];	/* Symbol Name */
-            long		n_value;	/* Value of Symbol */
-            short		n_scnum;	/* Section Number */
-            unsigned short	n_type;		/* Symbol Type */
-            char		n_sclass;	/* Storage Class */
-            char		n_numaux;	/* Auxiliary Count */
+            char        n_name[8];  /* Symbol Name */
+            long        n_value;    /* Value of Symbol */
+            short       n_scnum;    /* Section Number */
+            unsigned short  n_type;     /* Symbol Type */
+            char        n_sclass;   /* Storage Class */
+            char        n_numaux;   /* Auxiliary Count */
         }
         n_name has another check. if the first four bytes are null (00 00 00 00) then the last four byte are an offset into
         the string table. The start of the string table can be found by
@@ -631,13 +684,17 @@ def cluster_dir(file_path):
 
 
 def export_file(file_path):
+    if os.path.isdir(file_path):
+        print("ERROR: Cannot export directory, please pass -x for export all")
+        return
     gp = GOPE(file_path)
     ee = gp.export()
+    print(ee)
     save_json(file_path, ee)
 
 
-def exort_dir(dir_path):
-    for _file in glob.glob(dir_path + "*"):
+def export_dir(dir_path):
+    for _file in glob.glob(dir_path + "/*"):
         gp = GOPE(_file)
         ee = gp.export()
         save_json(_file, ee)
@@ -700,7 +757,7 @@ def main():
         export_file(args.e_file)
     elif args.ea_dir:
         # export attributes of files in directory to JSON
-        exort_dir(args.ea_dir)
+        export_dir(args.ea_dir)
     elif args.in_file:
         # print version
         print_version(args.in_file)
