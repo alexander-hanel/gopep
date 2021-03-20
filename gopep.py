@@ -1,9 +1,11 @@
 """
 Author: Alexander Hanel
-Version: 1.1
+Version: 1.2
 Purpose: go portable executable parser
 Requirements: Python3+ & Pefile
-Updates: Version 1.1 fixed bug in file tab strucutre parsing and other fixes
+Updates:
+    * Version 1.1 - fixed bug in file tab structure parsing and other fixes
+    * Version 1.2 - fixed bug in coff string table parser
 
 """
 import argparse
@@ -284,6 +286,7 @@ class GOPE(object):
             if self.annoying_debug:
                 print("DEBUG: Function String Offset 0x%x" % str_offset)
             temp_name = self.pe_section[str_offset:str_offset + 256]
+            # todo Use string length
             name = temp_name.split(b"\x00")[0]
             if self.annoying_debug:
                 print("DEBUG: Name %s" % name)
@@ -412,10 +415,12 @@ class GOPE(object):
                         continue
                     p_data = self.parse_coff(coff_data)
                     if p_data.e_zeroes:
-                        api_name = coff_data.split(b"\x00")[0]
+                        # string name is less than 8 bytes
+                        api_name = coff_data[0:8].split(b"\x00")[0]
                         if api_name:
                             symbols_strings.append(api_name)
                     else:
+                        # string is over 8 bytes and contains null byte
                         temp_data = string_table[p_data.e_offset:p_data.e_offset+256]
                         api_name = temp_data.split(b"\x00")[0]
                         if api_name:
@@ -722,6 +727,7 @@ def triage(file_path):
 
 
 def everything(file_path):
+    # TODO: not finished
     import pprint
     e = {}
     gp = GOPE(file_path)
