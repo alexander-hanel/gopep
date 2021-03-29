@@ -103,7 +103,7 @@ optional arguments:
 ```
 
 ### go_logger.py 
-Go logger is a simple function hooker for Go executables. Using [libptrace](https://github.com/immunityinc/libptrace) (thank you @0vercl0k for the recommendation), it sets a breakpoint on the `main.main`
+Go logger is a simple function hooker for Go executables. Using [libptrace](https://github.com/immunityinc/libptrace) (thank you [0vercl0k](https://github.com/0vercl0k) for the recommendation), it sets a breakpoint on the `main.main`
 then sets a breakpoint on all functions. The function address and name is extracted from `functab`. 
 The API addresses and function names are extracted using `gopep.py` with the `-st` argument. This arugment creates a `json` 
 with the string `.json` appended to the executable file name. 
