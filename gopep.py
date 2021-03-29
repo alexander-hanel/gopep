@@ -1,11 +1,12 @@
 """
 Author: Alexander Hanel
-Version: 1.2
+Version: 1.3
 Purpose: go portable executable parser
 Requirements: Python3+ & Pefile
 Updates:
     * Version 1.1 - fixed bug in file tab structure parsing and other fixes
     * Version 1.2 - fixed bug in coff string table parser
+    * Version 1.3 - Go function API logger added go_logger.py
 
 """
 import argparse
@@ -727,8 +728,17 @@ def triage(file_path):
 
 
 def everything(file_path):
-    # TODO: not finished
     import pprint
+    e = {}
+    gp = GOPE(file_path)
+    temp = vars(gp)
+    for vv in temp:
+        if vv != "data" or vv != "rdata" or vv != "text":
+            e[vv] = temp[vv]
+    pprint.pprint(e)
+
+
+def save_tabs(file_path):
     e = {}
     gp = GOPE(file_path)
     if gp.functab:
@@ -737,8 +747,7 @@ def everything(file_path):
         e["filetab"] = gp.filetab
     if gp.symtab_symbols:
         e["symtab"] = gp.symtab_symbols
-    tt = dict(list(e.items()) + list(gp.export().items()))
-    pprint.pprint(tt)
+    save_json(file_path, e)
 
 
 def main():
@@ -753,6 +762,7 @@ def main():
     cmd_p.add_argument('-m', '--module-data', dest="md_file", help="print module data details")
     cmd_p.add_argument('-t', '--triage', dest="t_file", help="triage file, print interesting attributes")
     cmd_p.add_argument('-ev', '--everything', dest="et_file", help="print EVERYTHING!")
+    cmd_p.add_argument('-st', '--savetabs', dest="save_tabs", help="Export functab, filetab & symtab to JSON")
 
     args = cmd_p.parse_args()
     if args.c_dir:
@@ -776,6 +786,9 @@ def main():
     elif args.et_file:
         # print everything in pretty format
         everything(args.et_file)
+    elif args.save_tabs:
+        # print everything in pretty format
+        save_tabs(args.save_tabs)
 
 
 if __name__ == "__main__":

@@ -102,6 +102,119 @@ optional arguments:
                         print EVERYTHING!
 ```
 
+### go_logger.py 
+Go logger is a simple function hooker for Go executables. Using [libptrace](https://github.com/immunityinc/libptrace) (thank you @0vercl0k for the recommendation), it sets a breakpoint on the `main.main`
+then sets a breakpoint on all functions. The function address and name is extracted from `functab`. 
+The API addresses and function names are extracted using `gopep.py` with the `-st` argument. This arugment creates a `json` 
+with the string `.json` appended to the executable file name. 
+
+
+Command line arguments `%python3.7%\python.exe go_logger.py go.exe go.json`. An example command line can be seen below. 
+
+```
+C:\Users\null\AppData\Local\Programs\Python\Python37\python.exe go_hook.py C:\Use
+rs\null\Documents\repo\gopep\test\go-hello-stripped.exe C:\Users\null\Documents\repo\gopep\test\go-hello-stripped.exe.js
+on
+```
+
+#### Log Ouput 
+
+```
+C:\Users\null\Documents\repo\libptrace>C:\Users\null\AppData\Local\Programs\Python\Python37\python.exe go_hook.py C:\Use
+rs\null\Documents\repo\gopep\test\go-hello-stripped.exe C:\Users\null\Documents\repo\gopep\test\go-hello-stripped.exe.js
+on
+[15256] Module ntdll loaded at 0x7ffb99da0000
+[15256] Module ntdll loaded at 0x77a30000
+[15256] Created thread with tid 11528
+[15256] Module wow64 loaded at 0x7ffb98080000
+[15256] Module wow64win loaded at 0x7ffb992a0000
+[15256] Attached
+[15256] BreakPoint Set at 0x00451840
+[15256] Module wow64cpu loaded at 0x77a20000
+[15256] Breakpoint
+[15256] Thread with tid 11528 exited
+[15256] Module kernel32 loaded at 0x75c50000
+[15256] Module KernelBase loaded at 0x76b80000
+[15256] Breakpoint
+[15256] Module advapi32 loaded at 0x75b80000
+[15256] Module msvcrt loaded at 0x76a60000
+[15256] Created thread with tid 6972
+[15256] Module sechost loaded at 0x752b0000
+[15256] Module rpcrt4 loaded at 0x76f00000
+[15256] Module sspicli loaded at 0x751f0000
+[15256] Module cryptbase loaded at 0x751e0000
+[15256] Module bcryptprimitives loaded at 0x77110000
+[15256] Created thread with tid 15136
+[15256] Created thread with tid 14576
+[15256] Module winmm loaded at 0x74f10000
+[15256] Module winmmbase loaded at 0x006a0000
+[15256] Module winmmbase loaded at 0x749d0000
+[15256] Module winmmbase unloaded
+[15256] Module winmmbase loaded at 0x00860000
+[15256] Module winmmbase unloaded
+[15256] Module cfgmgr32 loaded at 0x75d50000
+[15256] Module ucrtbase loaded at 0x768e0000
+[15256] Module ws2_32 loaded at 0x76b20000
+[15256] Module powrprof loaded at 0x773e0000
+[15256] Module umpdc loaded at 0x77a10000
+[15256] Created thread with tid 14972
+[15256] Created thread with tid 14472
+[15256] Created thread with tid 13372
+[15256] Created thread with tid 2728
+[15256] Func=runtime.printlock, IP=0x0042a390, Frame=0x11028fb8, Base=0x00000038, Return=0x0045185a
+[15256] Func=runtime.lock, IP=0x00407250, Frame=0x11028fac, Base=0x00000038, Return=0x0042a3e5
+[15256] Func=runtime/internal/atomic.Casuintptr, IP=0x00401fd0, Frame=0x11028f84, Base=0x00000038, Return=0x004072ac
+[15256] Func=runtime/internal/atomic.Cas, IP=0x00401fb0, Frame=0x11028f84, Base=0x00000038, Return=0x004072ac
+[15256] Func=runtime.printstring, IP=0x0042ac30, Frame=0x11028fb8, Base=0x00000038, Return=0x00451870
+[15256] Func=runtime.gwrite, IP=0x0042a460, Frame=0x11028f94, Base=0x00000038, Return=0x0042ac99
+[15256] Func=runtime.recordForPanic, IP=0x0042a270, Frame=0x11028f7c, Base=0x00000038, Return=0x0042a49d
+[15256] Func=runtime.printlock, IP=0x0042a390, Frame=0x11028f64, Base=0x00000038, Return=0x0042a28e
+[15256] Func=runtime/internal/atomic.Load, IP=0x00401f70, Frame=0x11028f64, Base=0x00000038, Return=0x0042a29c
+[15256] Func=runtime.memmove, IP=0x0044d2c0, Frame=0x11028f64, Base=0x0000000d, Return=0x0042a35f
+[15256] Func=runtime.printunlock, IP=0x0042a400, Frame=0x11028f64, Base=0x0000000d, Return=0x0042a36d
+[15256] Func=runtime.writeErr, IP=0x00448160, Frame=0x11028f7c, Base=0x00000000, Return=0x0042a4ea
+[15256] Func=runtime.write, IP=0x00440680, Frame=0x11028f68, Base=0x00000000, Return=0x00448195
+[15256] Func=runtime.write1, IP=0x00425d10, Frame=0x11028f54, Base=0x00000000, Return=0x0044069f
+[15256] Func=runtime.stdcall1, IP=0x00426930, Frame=0x11028f28, Base=0x00000000, Return=0x00425e09
+[15256] Func=runtime.stdcall, IP=0x00426850, Frame=0x11028f1c, Base=0x00000000, Return=0x00426963
+[15256] Func=runtime.asmcgocall, IP=0x0044c400, Frame=0x11028f04, Base=0x00000000, Return=0x004268c1
+[15256] Func=gosave, IP=0x0044c3c0, Frame=0x11028f00, Base=0x004b62a0, Return=0x0044c436
+[15256] Func=runtime.asmstdcall, IP=0x0044d560, Frame=0x0019feac, Base=0x004b62a0, Return=0x0044c45e
+[15256] Func=runtime.stdcall5, IP=0x00426a30, Frame=0x11028f28, Base=0x0000000a, Return=0x00425dbf
+[15256] Func=runtime.stdcall, IP=0x00426850, Frame=0x11028f1c, Base=0x0000000a, Return=0x00426a63
+[15256] Func=runtime.asmcgocall, IP=0x0044c400, Frame=0x11028f04, Base=0x0000000a, Return=0x004268c1
+[15256] Func=gosave, IP=0x0044c3c0, Frame=0x11028f00, Base=0x004b62a0, Return=0x0044c436
+[15256] Func=runtime.asmstdcall, IP=0x0044d560, Frame=0x0019feac, Base=0x004b62a0, Return=0x0044c45e
+[15256] Func=runtime.printunlock, IP=0x0042a400, Frame=0x11028fb8, Base=0x0019feac, Return=0x00451875
+[15256] Func=runtime.unlock, IP=0x00407430, Frame=0x11028fb0, Base=0x0019feac, Return=0x0042a44c
+[15256] Func=runtime/internal/atomic.Loaduintptr, IP=0x00401ff0, Frame=0x11028f94, Base=0x0019feac, Return=0x00407468
+[15256] Func=runtime/internal/atomic.Load, IP=0x00401f70, Frame=0x11028f94, Base=0x0019feac, Return=0x00407468
+[15256] Func=runtime/internal/atomic.Casuintptr, IP=0x00401fd0, Frame=0x11028f94, Base=0x0019feac, Return=0x0040748d
+[15256] Func=runtime/internal/atomic.Cas, IP=0x00401fb0, Frame=0x11028f94, Base=0x0019feac, Return=0x0040748d
+[15256] Func=runtime/internal/atomic.Load, IP=0x00401f70, Frame=0x11028fc4, Base=0x0019feac, Return=0x0042b1ff
+[15256] Func=runtime/internal/atomic.Load, IP=0x00401f70, Frame=0x11028fc4, Base=0x0019feac, Return=0x0042b24e
+[15256] Func=runtime.exit, IP=0x00425cc0, Frame=0x11028fc4, Base=0x0019feac, Return=0x0042b262
+[15256] Func=runtime.lock, IP=0x00407250, Frame=0x11028fb4, Base=0x0019feac, Return=0x00425cd1
+[15256] Func=runtime/internal/atomic.Casuintptr, IP=0x00401fd0, Frame=0x11028f8c, Base=0x0019feac, Return=0x004072ac
+[15256] Func=runtime/internal/atomic.Cas, IP=0x00401fb0, Frame=0x11028f8c, Base=0x0019feac, Return=0x004072ac
+[15256] Func=runtime/internal/atomic.Store, IP=0x00402150, Frame=0x11028fb4, Base=0x0019feac, Return=0x00425ce7
+[15256] Func=runtime.stdcall1, IP=0x00426930, Frame=0x11028fb4, Base=0x0019feac, Return=0x00425cfd
+[15256] Func=runtime.stdcall, IP=0x00426850, Frame=0x11028fa8, Base=0x0019feac, Return=0x00426963
+[15256] Func=runtime.asmcgocall, IP=0x0044c400, Frame=0x11028f90, Base=0x0019feac, Return=0x004268c1
+[15256] Func=gosave, IP=0x0044c3c0, Frame=0x11028f8c, Base=0x004b62a0, Return=0x0044c436
+[15256] Func=runtime.asmstdcall, IP=0x0044d560, Frame=0x0019feac, Base=0x004b62a0, Return=0x0044c45e
+[15256] Thread with tid 14576 exited
+[15256] Thread with tid 15136 exited
+[15256] Thread with tid 6972 exited
+[15256] Thread with tid 2728 exited
+[15256] Func=runtime.nanotime1, IP=0x0044d930, Frame=0x10f0fee0, Base=0x1102c1e0, Return=0x0043407d
+[15256] Thread with tid 13372 exited
+[15256] Thread with tid 14472 exited
+[15256] Thread with tid 14972 exited
+[15256] exited
+```
+
+
 ***
 # Notes
 
