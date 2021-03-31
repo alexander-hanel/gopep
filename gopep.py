@@ -1,12 +1,17 @@
 """
 Author: Alexander Hanel
-Version: 1.3
+Version: 1.4
 Purpose: go portable executable parser
 Requirements: Python3+ & Pefile
 Updates:
     * Version 1.1 - fixed bug in file tab structure parsing and other fixes
     * Version 1.2 - fixed bug in coff string table parser
     * Version 1.3 - Go function API logger added go_logger.py
+    * Version 1.4 - fixed null cluster hash issue
+                  - add checks to ensure none is not being hashed
+                  - edited out some of the binary data from the everything output
+                  - added license
+
 
 """
 import argparse
@@ -502,7 +507,6 @@ class GOPE(object):
         :param source:
         :return:
         """
-        # TODO add begins with main. not in
         if not self.functab:
             return None
         impstrs = []
@@ -515,6 +519,8 @@ class GOPE(object):
             elif source == "nomain":
                     if not symbol[1].startswith(b"main."):
                         impstrs.append(symbol[1])
+        if not impstrs:
+            return None
         return md5(b','.join(impstrs)).hexdigest()
 
     def get_itabs(self):
@@ -534,7 +540,9 @@ class GOPE(object):
         :return:
         """
         if self.filetab:
-            return md5(b','.join(self.itab_sym)).hexdigest()
+            if self.itab_sym:
+                return md5(b','.join(self.itab_sym)).hexdigest()
+        return None
 
     def get_imps(self, source):
         """
@@ -569,7 +577,9 @@ class GOPE(object):
                 base_paths.append(path)
         base_paths.sort()
         self.go_base_paths = base_paths
-        self.hash_file_paths = md5(b','.join(base_paths)).hexdigest()
+        if base_paths:
+            self.hash_file_paths = md5(b','.join(base_paths)).hexdigest()
+
 
     def go_filetab_hash(self):
         """
@@ -578,6 +588,8 @@ class GOPE(object):
         """
         if self.filetab:
             return md5(b','.join(self.filetab)).hexdigest()
+        else:
+            return None
 
     def export(self):
         """
@@ -686,7 +698,8 @@ def cluster_dir(file_path):
         except Exception as err:
             print("CLUSTER ERROR: %s" % err)
     if export:
-        cluster(export)
+        matches = cluster(export)
+        print(matches)
 
 
 def export_file(file_path):
@@ -695,7 +708,6 @@ def export_file(file_path):
         return
     gp = GOPE(file_path)
     ee = gp.export()
-    print(ee)
     save_json(file_path, ee)
 
 
@@ -733,8 +745,9 @@ def everything(file_path):
     gp = GOPE(file_path)
     temp = vars(gp)
     for vv in temp:
-        if vv != "data" or vv != "rdata" or vv != "text":
-            e[vv] = temp[vv]
+        if vv == "data" or vv == "rdata" or vv == "text" or vv == "mod_section" or vv == "pe_section" or vv == "module_data":
+            continue
+        e[vv] = temp[vv]
     pprint.pprint(e)
 
 
